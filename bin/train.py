@@ -5,7 +5,6 @@
 from __future__ import print_function
 import argparse
 import json
-import multiprocessing
 import time
 
 import chainer
@@ -16,6 +15,7 @@ from chainer.training import extensions
 import os
 import sys
 
+os.environ['OMP_NUM_THREADS'] = '1'
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from projection_gan.pose.posenet import MLP
 from projection_gan.pose.dataset.pose_dataset import H36M, MPII
@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--use_heuristic_loss', action="store_true")
     parser.add_argument('--use_sh_detection', action="store_true")
     parser.add_argument('--use_bn', action="store_true")
+    parser.add_argument('--use_camera_rotation_parameter', action="store_true")
     args = parser.parse_args()
     args.out = create_result_dir(args.out)
 
@@ -102,7 +103,6 @@ def main():
         test = MPII3DDataset(train=False)
     print('TRAIN: {}, TEST: {}'.format(len(train), len(test)))
 
-    multiprocessing.set_start_method('spawn')
     train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
     test_iter = chainer.iterators.MultiprocessIterator(
         test, args.test_batchsize, repeat=False, shuffle=False)
@@ -112,7 +112,9 @@ def main():
         gan_accuracy_cap=args.gan_accuracy_cap,
         use_heuristic_loss=args.use_heuristic_loss,
         heuristic_loss_weight=args.heuristic_loss_weight,
-        mode=args.mode, iterator={'main': train_iter, 'test': test_iter},
+        mode=args.mode,
+        use_camera_rotation_parameter=args.use_camera_rotation_parameter,
+        iterator={'main': train_iter, 'test': test_iter},
         optimizer={'gen': opt_gen, 'dis': opt_dis}, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 

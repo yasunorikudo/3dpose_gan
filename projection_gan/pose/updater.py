@@ -14,7 +14,8 @@ import numpy as np
 class H36M_Updater(chainer.training.StandardUpdater):
 
     def __init__(self, gan_accuracy_cap, use_heuristic_loss,
-                 heuristic_loss_weight, mode, *args, **kwargs):
+                 heuristic_loss_weight, mode, use_camera_rotation_parameter,
+                 *args, **kwargs):
         if not mode in ['supervised', 'unsupervised']:
             raise ValueError("only 'supervised' and 'unsupervised' are valid "
                              "for 'mode', but '{}' is given.".format(mode))
@@ -22,6 +23,7 @@ class H36M_Updater(chainer.training.StandardUpdater):
         self.use_heuristic_loss = use_heuristic_loss
         self.heuristic_loss_weight = heuristic_loss_weight
         self.mode = mode
+        self.use_camera_rotation_parameter = use_camera_rotation_parameter
         super(H36M_Updater, self).__init__(*args, **kwargs)
 
     @staticmethod
@@ -43,6 +45,60 @@ class H36M_Updater(chainer.training.StandardUpdater):
     def calculate_heuristic_loss(xy_real, z_pred):
         return F.average(F.relu(
             -H36M_Updater.calculate_rotation(xy_real, z_pred)))
+
+    @staticmethod
+    def create_rotation_matrix(vec, theta):
+        """
+        Create rotation matrix
+        Args
+        vec(ndarray): Batchsize x 3, Unit vector of axis
+        theta(ndarray): Batchsize x 1, Radial rotation value
+        Returns
+        R(ndarray): Batchsize x 3 x 3, rotation matrix
+        """
+        batchsize = len(vec)
+        xp = chainer.cuda.get_array_module(vec)
+        R = xp.empty((batchsize, 3, 3), dtype='f')
+        vx, vy, vz = vec.T
+        cos_t = xp.cos(theta[:, 0])
+        sin_t = xp.sin(theta[:, 0])
+        R[:, 0, 0] = vx * vx * (1 - cos_t) + cos_t
+        R[:, 0, 1] = vx * vy * (1 - cos_t) - vz * sin_t
+        R[:, 0, 2] = vz * vx * (1 - cos_t) + vy * sin_t
+
+        R[:, 1, 0] = vx * vy * (1 - cos_t) + vz * sin_t
+        R[:, 1, 1] = vy * vy * (1 - cos_t) + cos_t
+        R[:, 1, 2] = vy * vz * (1 - cos_t) - vx * sin_t
+
+        R[:, 2, 0] = vz * vx * (1 - cos_t) - vy * sin_t
+        R[:, 2, 1] = vy * vz * (1 - cos_t) + vx * sin_t
+        R[:, 2, 2] = vz * vz * (1 - cos_t) + cos_t
+
+        return R
+
+    @staticmethod
+    def differentiable_rotation(X, Y, Z, vec, theta):
+        """
+        Differentiable rotation around given axis
+        Args
+        X(chainer.Variable): Batchsize x N, X coordinates
+        Y(chainer.Variable): Batchsize x N, Y coordinates
+        Z(chainer.Variable): Batchsize x N, Z coordinates
+        vec(ndarray): Batchsize x 3, Unit vector of axis
+        theta(ndarray): Batchsize x 1, Radial rotation value
+        Returns
+        X2(chainer.Variable): Batchsize x N, X coordinates after rotation
+        Y2(chainer.Variable): Batchsize x N, Y coordinates after rotation
+        Z2(chainer.Variable): Batchsize x N, Z coordinates after rotation
+        """
+        R = H36M_Updater.create_rotation_matrix(vec, theta)
+        p3d = chainer.functions.concat(
+            (X[:, None], Y[:, None], Z[:, None]), axis=1)
+        X2 = chainer.functions.sum(p3d * R[:, 0, :, None], axis=1)
+        Y2 = chainer.functions.sum(p3d * R[:, 1, :, None], axis=1)
+        Z2 = chainer.functions.sum(p3d * R[:, 2, :, None], axis=1)
+
+        return X2, Y2, X2
 
     def update_core(self):
         gen_optimizer = self.get_optimizer('gen')
@@ -67,15 +123,20 @@ class H36M_Updater(chainer.training.StandardUpdater):
 
         elif self.mode == 'unsupervised':
             # Random rotation.
-            theta = gen.xp.random.uniform(0, 2 * np.pi, batchsize).astype('f')
-            cos_theta = gen.xp.cos(theta)[:, None]
-            sin_theta = gen.xp.sin(theta)[:, None]
+            theta = gen.xp.random.uniform(0, 2 * np.pi, batchsize)
+            theta = theta[:, None].astype('f')
 
             # 2D Projection.
             x = xy_real[:, 0::2]
             y = xy_real[:, 1::2]
-            new_x = x * cos_theta + z_pred * sin_theta
-            xy_fake = F.concat((new_x[:, :, None], y[:, :, None]), axis=2)
+            vec = gen.xp.zeros((batchsize, 3), dtype='f')
+            if self.use_camera_rotation_parameter:
+                vec[:, 1] = gen.xp.cos(0.22)
+                vec[:, 2] = gen.xp.sin(0.22)
+            else:
+                vec[:, 1] = 1  # rotation around y-axis
+            xf, yf, zf = self.differentiable_rotation(x, y, z_pred, vec, theta)
+            xy_fake = F.concat((xf[:, :, None], yf[:, :, None]), axis=2)
             xy_fake = F.reshape(xy_fake, (batchsize, -1))
 
             y_real = dis(xy_real)

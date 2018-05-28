@@ -1,7 +1,7 @@
 import glob
 
 import numpy
-import scipy.io
+# import scipy.io
 import collections
 import typing
 from . import pose_dataset_base
