@@ -50,6 +50,7 @@ if __name__ == '__main__':
 
     # 各行動クラスに対して平均エラー(mm)を算出
     errors = []
+    tex = ''
     for act_name in actions:
         test = projection_gan.pose.dataset.pose_dataset.H36M(
             action=act_name, length=1, train=False,
@@ -77,9 +78,12 @@ if __name__ == '__main__':
             eds.append(euclidean_distance * len(batch))
         test_iter.finalize()
         print(act_name, sum(eds) / len(test))
+        tex += '{0:.1f} & '.format(float(sum(eds) / len(test)))
         errors.append(sum(eds) / len(test))
     print('-' * 20)
     print('average', sum(errors) / len(errors))
+    tex += '{0:.1f}'.format(float(sum(errors) / len(errors)))
+    print('TEX: {}'.format(tex))
 
     # csvとして保存
     with open(args.model_path.replace('.npz', '.csv'), 'w') as f:
