@@ -28,6 +28,25 @@ This is the authors' implementation of [Unsupervised Adversarial Learning of 3D 
     - to download pre-trained model
     - or you can download pre-trained model directory from [https://github.com/DwangoMediaVillage/3dpose_gan/blob/master/sample/gen_epoch_500.npz?raw=true](https://github.com/DwangoMediaVillage/3dpose_gan/blob/master/sample/gen_epoch_500.npz?raw=true)
 
+## Prepare dataset
+#### Human3.6M
+- Sign up for [Human3.6M](http://vision.imar.ro/human3.6m/description.php) and login
+- Download camera parameters:
+```
+mkdir -p data/h36m
+cd data/h36m
+wget http://vision.imar.ro/human3.6m/code-v1.1.zip
+unzip code-v1.1.zip
+rm code-v1.1.zip
+cd ../..
+```
+- Load camera parameters and save it:
+```
+python bin/load_camera_params.py
+```
+
+
+
 ## Training
 #### Human3.6M dataset
   - [x] Unsupervised learning of 3D points from ground truth 2D points

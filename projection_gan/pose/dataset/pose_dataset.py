@@ -33,13 +33,13 @@ H36M_NAMES[26] = 'RElbow'
 H36M_NAMES[27] = 'RWrist'
 
 
-def project_point_radial(P, R, T, f, c, k, p):
+def project_point_radial(P, a, T, f, c, k, p):
     """
     Project points from 3d to 2d using camera parameters
     including radial and tangential distortion
     Args
     P: Nx3 points in world coordinates
-    R: 3x3 Camera rotation matrix
+    a: 3x1 radial angle of roration around x, y, z axis
     T: 3x1 Camera translation parameters
     f: (scalar) Camera focal length
     c: 2x1 Camera center
@@ -56,6 +56,19 @@ def project_point_radial(P, R, T, f, c, k, p):
     # P is a matrix of 3-dimensional points
     assert len(P.shape) == 2
     assert P.shape[1] == 3
+
+    # Rotation matrix
+    ax, ay, az = a
+    Rx = np.array([[1,          0,           0],
+                   [0, np.cos(ax), -np.sin(ax)],
+                   [0, np.sin(ax),  np.cos(ax)]], float)
+    Ry = np.array([[ np.cos(ay), 0, np.sin(ay)],
+                   [          0, 1,          0],
+                   [-np.sin(ay), 0, np.cos(ay)]], float)
+    Rz = np.array([[np.cos(az), -np.sin(az), 0],
+                   [np.sin(az),  np.cos(az), 0],
+                   [         0,           0, 1]], float)
+    R = Rx.dot(Ry.dot(Rz))
 
     N = P.shape[0]
     X = R.dot(P.T - T)  # rotate and translate
@@ -103,7 +116,7 @@ class H36M(pose_dataset_base.PoseDatasetBase):
             print('Downloading camera parameters.')
             os.system('wget --no-check-certificate "https://onedriv' + \
                 'e.live.com/download?cid=B08D60FE71FF90FD&resid=B08' + \
-                'D60FE71FF90FD%2118615&authkey=AEUoi3s16rBTFRA" -O ' + \
+                'D60FE71FF90FD%2118727&authkey=AKJRaMA6lgXZvmU" -O ' + \
                 'data/h36m/cameras.pkl')
         with open('data/h36m/cameras.pkl', 'rb') as f:
             cams = pickle.load(f)
@@ -195,9 +208,22 @@ class H36M(pose_dataset_base.PoseDatasetBase):
             sh_detect_xy = self.p2d_sh[subject][file_name]
             sh_detect_xy = sh_detect_xy[cam_name][start_pos:start_pos+length]
 
+        # Rotation matrix
+        ax, ay, az = params['a'][:, 0]
+        Rx = np.array([[1,          0,           0],
+                       [0, np.cos(ax), -np.sin(ax)],
+                       [0, np.sin(ax),  np.cos(ax)]], float)
+        Ry = np.array([[ np.cos(ay), 0, np.sin(ay)],
+                       [          0, 1,          0],
+                       [-np.sin(ay), 0, np.cos(ay)]], float)
+        Rz = np.array([[np.cos(az), -np.sin(az), 0],
+                       [np.sin(az),  np.cos(az), 0],
+                       [         0,           0, 1]], float)
+        R = Rx.dot(Ry.dot(Rz))
+
         # カメラ位置からの平行投影
         P = poses_xyz.reshape(-1, 3)
-        X = params['R'].dot(P.T).T
+        X = R.dot(P.T).T
         X = X.reshape(-1, self.N * 3)  # shape=(length, 3*n_joints)
 
         # Normalization of 3d points.
