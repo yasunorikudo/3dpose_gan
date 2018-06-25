@@ -85,8 +85,7 @@ if __name__ == '__main__':
     print('-' * 20)
     print('average', sum(errors) / len(errors))
     tex += '{0:.1f}'.format(float(sum(errors) / len(errors)))
-    if args.tex_format:
-        print('TEX: {}'.format(tex))
+    print('TEX: {}'.format(tex))
 
     # csvとして保存
     with open(args.model_path.replace('.npz', '.csv'), 'w') as f:
