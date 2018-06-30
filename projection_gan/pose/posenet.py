@@ -5,7 +5,6 @@
 import chainer
 import chainer.functions as F
 import chainer.links as L
-from projection_gan.pose.sngan.links.sn_linear import SNLinear
 
 
 class MLP(chainer.Chain):
@@ -25,16 +24,10 @@ class MLP(chainer.Chain):
         self.activate_func = activate_func
         w = chainer.initializers.Normal(0.02)
         with self.init_scope():
-            if mode == 'generator':
-                self.l1 = L.Linear(n_in, n_unit, initialW=w)
-                self.l2 = L.Linear(n_unit, n_unit, initialW=w)
-                self.l3 = L.Linear(n_unit, n_unit, initialW=w)
-                self.l4 = L.Linear(n_unit, n_out, initialW=w)
-            elif mode == 'discriminator':
-                self.l1 = SNLinear(n_in, n_unit, initialW=w)
-                self.l2 = SNLinear(n_unit, n_unit, initialW=w)
-                self.l3 = SNLinear(n_unit, n_unit, initialW=w)
-                self.l4 = SNLinear(n_unit, n_out, initialW=w)
+            self.l1 = L.Linear(n_in, n_unit, initialW=w)
+            self.l2 = L.Linear(n_unit, n_unit, initialW=w)
+            self.l3 = L.Linear(n_unit, n_unit, initialW=w)
+            self.l4 = L.Linear(n_unit, n_out, initialW=w)
 
             if self.use_bn:
                 self.bn1 = L.BatchNormalization(n_unit)
