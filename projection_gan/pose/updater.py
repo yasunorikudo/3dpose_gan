@@ -131,8 +131,8 @@ class H36M_Updater(chainer.training.StandardUpdater):
             y = xy_real[:, 1::2]
             vec = gen.xp.zeros((batchsize, 3), dtype='f')
             if self.use_camera_rotation_parameter:
-                vec[:, 1] = gen.xp.cos(0.22)
-                vec[:, 2] = gen.xp.sin(0.22)
+                vec[:, 1] = gen.xp.cos(np.pi / 2 - 1.35)  # y-axis
+                vec[:, 2] = gen.xp.sin(np.pi / 2 - 1.35)  # z-axis
             else:
                 vec[:, 1] = 1  # rotation around y-axis
             xf, yf, zf = self.differentiable_rotation(x, y, z_pred, vec, theta)
