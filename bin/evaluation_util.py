@@ -59,9 +59,9 @@ def create_img(arr, img=None):
     xs = arr[0::2].copy()
     ys = arr[1::2].copy()
     if img is None:
-        xs *= 80
+        xs *= 75
         xs += 100
-        ys *= 80
+        ys *= 75
         ys += 150
         xs = xs.astype('i')
         ys = ys.astype('i')

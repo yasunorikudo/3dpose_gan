@@ -153,36 +153,63 @@ def create_pose(model, points):
 
 
 def main(args):
+    import cv2
     model = evaluation_util.load_model(vars(args))
     chainer.serializers.load_npz(args.lift_model, model)
     cap = cv.VideoCapture(args.input if args.input else 0)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) / 2)
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) / 2)
+    count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    hasFrame, frame = cap.read()
-    if not hasFrame:
-        exit(0)
-    points = OpenPose(args).predict(args, frame)
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    out = None
 
-    if None in points:
-        n_detect_key_points = sum([vec is not None for vec in points])
-        raise Exception('OpenPose could not detect enough key points. '
-            '{}/{} points were detected. Try another image.'.format(n_detect_key_points, len(points)))
-    points = [np.array(vec) for vec in points]
-    BODY_PARTS, POSE_PAIRS = parts(args)
+    import tqdm
+    for i in tqdm.tqdm(range(count)):
+        ret, frame = cap.read()
+        if not ret:
+            raise Exception
 
-    points = to36M(points, BODY_PARTS)  # 19 points -> 17 points
-    points = np.reshape(points, [1, -1]).astype('f')
-    points_norm = projection_gan.pose.dataset.pose_dataset.pose_dataset_base.Normalization.normalize_2d(points)
-    pose = create_pose(model, points_norm)
+        frame = cv2.resize(frame, (w, h))
 
-    out_directory = "demo_out"
-    os.makedirs(out_directory, exist_ok=True)
-    out_img = evaluation_util.create_img(points[0], frame)
-    cv.imwrite(os.path.join(out_directory, 'openpose_detect.jpg'), out_img)
-    deg = 15
-    for d in range(0, 360 + deg, deg):
-        img = evaluation_util.create_projection_img(pose, np.pi * d / 180.)
-        cv.imwrite(os.path.join(out_directory, "rot_{:03d}_degree.png".format(d)), img)
-    print("Saved result images in '{}'.".format(os.path.join(os.getcwd(), out_directory)))
+        points = OpenPose(args).predict(args, frame)
+
+        try:
+            points = [np.array(vec) for vec in points]
+            BODY_PARTS, POSE_PAIRS = parts(args)
+
+            points = to36M(points, BODY_PARTS)  # 19 points -> 17 points
+            points = np.reshape(points, [1, -1]).astype('f')
+            points_norm = projection_gan.pose.dataset.pose_dataset.pose_dataset_base.Normalization.normalize_2d(points)
+            pose = create_pose(model, points_norm)
+            frame = evaluation_util.create_img(points[0], frame)
+            img_0 = evaluation_util.create_projection_img(pose, np.pi / 2)
+            img_90 = evaluation_util.create_projection_img(pose, i * np.pi / 100)
+            img = np.concatenate((img_0, img_90), axis=0)
+            img = cv2.resize(img, (int(img.shape[1] * h / img.shape[0]), h))
+            frame2 = np.concatenate((frame, img), axis=1)
+            print(i)
+        except:
+            img_0 = evaluation_util.create_projection_img(np.array([0.]*51).reshape(1, -1), np.pi / 2)
+            img_90 = evaluation_util.create_projection_img(np.array([0.]*51).reshape(1, -1), i * np.pi / 100)
+            img = np.concatenate((img_0, img_90), axis=0)
+            img = cv2.resize(img, (int(img.shape[1] * h / img.shape[0]), h))
+            frame2 = np.concatenate((frame, img), axis=1)
+
+        if out is None:
+            out = cv2.VideoWriter('aaa500_2.mp4', fourcc, fps, (frame2.shape[1], frame2.shape[0]))
+        out.write(frame2)
+
+        # if i == 100:
+        #     break
+
+        # cv.imwrite(os.path.join(out_directory, 'openpose_detect.jpg'), out_img)
+        # deg = 15
+        # for d in range(0, 360 + deg, deg):
+        #     img = evaluation_util.create_projection_img(pose, np.pi * d / 180.)
+        #     cv.imwrite(os.path.join(out_directory, "rot_{:03d}_degree.png".format(d)), img)
+        # print("Saved result images in '{}'.".format(os.path.join(os.getcwd(), out_directory)))
 
 
 if __name__ == '__main__':
