@@ -1,2 +1,9 @@
-chainer == 4.0.0
-cupy == 4.0.0
+-i https://pypi.org/simple
+chainer==5.3.0
+cupy-cuda100==5.3.0
+fastrlock==0.4
+filelock==3.0.10
+numpy==1.16.2
+opencv-python==4.0.0.21
+protobuf==3.7.1
+six==1.12.0
