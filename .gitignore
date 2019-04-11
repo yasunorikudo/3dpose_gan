@@ -111,3 +111,4 @@ h36m*
 sample/*.npz
 sample/*.prototxt
 sample/*.caffemodel
+demo_out
