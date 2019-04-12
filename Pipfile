@@ -12,6 +12,7 @@ opencv-python = "==3.4.5.20"
 scipy = "*"
 ipython = {extras = ["all"],version = "*"}
 ipdb = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.6"
