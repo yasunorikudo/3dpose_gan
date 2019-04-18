@@ -112,3 +112,4 @@ sample/*.npz
 sample/*.prototxt
 sample/*.caffemodel
 demo_out
+data/images
