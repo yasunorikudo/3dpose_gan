@@ -103,8 +103,8 @@ def main():
     print('TRAIN: {}, TEST: {}'.format(len(train), len(test)))
 
     multiprocessing.set_start_method('spawn')
-    train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
-    test_iter = chainer.iterators.MultiprocessIterator(
+    train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
+    test_iter = chainer.iterators.SerialIterator(
         test, args.test_batchsize, repeat=False, shuffle=False)
 
     # Set up a trainer

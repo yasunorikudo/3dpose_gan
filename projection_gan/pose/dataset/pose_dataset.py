@@ -252,4 +252,4 @@ class MPII(chainer.dataset.DatasetMixin):
         dummy_X[0, 0, 1::3] = mpii_poses[0, 0, 1::2]
         dummy_scale = np.array([1], dtype=np.float32)
 
-        return mpii_poses, dummy_X, dummy_scale
+        return mpii_poses[0], dummy_X[0], dummy_scale

@@ -56,7 +56,7 @@ if __name__ == '__main__':
     xp = np if args.gpu < 0 else chainer.cuda.cupy
     for batch in test_iter:
         xy_proj, _, _ = chainer.dataset.concat_examples(batch, device=args.gpu)
-        xy = xp.concatenate((xy, xy_proj[:, 0, 0]), axis=0)
+        xy = xp.concatenate((xy, xy_proj[:, 0]), axis=0)
         with chainer.no_backprop_mode(), chainer.using_config('train', False):
             z_sup = xp.concatenate((z_sup, nn_sup(xy_proj[:, 0]).data), axis=0)
             z_unsup = xp.concatenate((z_unsup, nn_unsup(xy_proj[:, 0]).data), axis=0)
