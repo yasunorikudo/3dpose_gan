@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--use_heuristic_loss', action="store_true")
     parser.add_argument('--use_sh_detection', action="store_true")
     parser.add_argument('--use_bn', action="store_true")
+    parser.add_argument('--ignore_actions_for_train', nargs='*', type=str, default=None)
     args = parser.parse_args()
     args.out = create_result_dir(args.out)
 
@@ -91,7 +92,7 @@ def main():
     # Load dataset.
     if args.dataset == 'h36m':
         train = H36M(action=args.action, length=1, train=True,
-                     use_sh_detection=args.use_sh_detection)
+                     use_sh_detection=args.use_sh_detection, ignore_actions=args.ignore_actions_for_train)
         test = H36M(action=args.action, length=1, train=False,
                     use_sh_detection=args.use_sh_detection)
     elif args.dataset == 'mpii':

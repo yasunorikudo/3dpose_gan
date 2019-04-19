@@ -80,7 +80,7 @@ def project_point_radial(P, R, T, f, c, k, p):
 class H36M(pose_dataset_base.PoseDatasetBase):
 
     def __init__(self, action='all', length=1,
-                 train=True, use_sh_detection=False):
+                 train=True, use_sh_detection=False, ignore_actions=None):
         if train:
             subjects = ['S1', 'S5', 'S6', 'S7', 'S8']
         else:
@@ -126,6 +126,14 @@ class H36M(pose_dataset_base.PoseDatasetBase):
             actions = [action]
         else:
             raise Exception('Invalid action.')
+
+        if ignore_actions:
+            for ignore_act in ignore_actions:
+                actions.remove(ignore_act)
+        if train:
+            print('Actions for train:', actions)
+        else:
+            print('Actions for test:', actions)
 
         # 使用する関節位置のインデックス(17点)
         dim_to_use_x = np.where(np.array([x != '' for x in H36M_NAMES]))[0] * 3
