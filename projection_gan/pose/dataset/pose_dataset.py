@@ -130,10 +130,6 @@ class H36M(pose_dataset_base.PoseDatasetBase):
         if ignore_actions:
             for ignore_act in ignore_actions:
                 actions.remove(ignore_act)
-        if train:
-            print('Actions for train:', actions)
-        else:
-            print('Actions for test:', actions)
 
         # 使用する関節位置のインデックス(17点)
         dim_to_use_x = np.where(np.array([x != '' for x in H36M_NAMES]))[0] * 3
