@@ -66,22 +66,24 @@ if __name__ == '__main__':
 
     total = len(test_idx) if args.small_dataset <= 0 else args.small_dataset
     pbar = tqdm(total=total)
+    os.makedirs(os.path.join("data", "images", "_all"), exist_ok=True)
     for j, i in enumerate(test_idx):
         full_path = os.path.join(args.mpii_root, mpii_images[i])
         img = cv2.imread(full_path)
 
         deg = 15
-        os.makedirs(os.path.join("data", "images", str(j)), exist_ok=True)
+        os.makedirs(os.path.join("data", "images", "{0:04d}".format(j)), exist_ok=True)
         for d in range(0, 360 + deg, deg):
             img_sup = create_projection_img(pose3d_sup[j:j+1], np.pi * d / 180.)
             img_sup = cv2.putText(img_sup, "supervised", (10, img_sup.shape[0]-10), 0, 0.8, (256, 0, 0), 1)
             img_unsup = create_projection_img(pose3d_unsup[j:j+1], np.pi * d / 180.)
             img_unsup = cv2.putText(img_unsup, "unsupervised", (10, img_unsup.shape[0]-10), 0, 0.8, (0, 0, 256), 1)
             concat_img = xp.concatenate((img_sup, img_unsup), axis=1)
-            cv2.imwrite(os.path.join("data", "images", str(j), "rot_{:03d}_degree.png".format(d)), concat_img)
+            cv2.imwrite(os.path.join("data", "images", "{0:04d}".format(j), "rot_{:03d}_degree.png".format(d)), concat_img)
 
         img = create_img(mpii_detections[i], img)
-        cv2.imwrite(os.path.join("data", "images", str(j), "input.jpg"), img)
+        cv2.imwrite(os.path.join("data", "images", "{0:04d}".format(j), "input.jpg"), img)
+        cv2.imwrite(os.path.join("data", "images", "_all", "{0:04d}.jpg".format(j)), img)
         pbar.update(1)
         if args.small_dataset > 0 and j + 1 == args.small_dataset:
             break
