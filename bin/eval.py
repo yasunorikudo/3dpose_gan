@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import projection_gan
 
 if __name__ == '__main__':
@@ -24,8 +24,9 @@ if __name__ == '__main__':
                         help='Generatorの重みファイルへのパス')
     parser.add_argument('--gpu', '-g', type=int, default=0)
     parser.add_argument('--batchsize', '-b', type=int, default=200)
-    parser.add_argument('--allow_inversion', action="store_true",
+    parser.add_argument('--allow_inversion', action='store_true',
                          help='評価時にzの反転を許可するかどうか')
+    parser.add_argument('--tex', action='store_true')
     args = parser.parse_args()
 
     # 学習時のオプションの読み込み
@@ -86,3 +87,11 @@ if __name__ == '__main__':
         for act_name, error in zip(actions, errors):
             f.write('{},{}\n'.format(act_name, error))
         f.write('{},{}\n'.format('average', sum(errors) / len(errors)))
+
+    # For TEX
+    if args.tex:
+        tex_str = ''
+        for i, error in enumerate(errors):
+            tex_str += '{0:.1f} & '.format(float(error))
+    tex_str += '{0:.1f}'.format(float(sum(errors) / len(errors)))
+    print(tex_str)
