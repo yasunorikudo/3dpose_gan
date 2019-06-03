@@ -1,5 +1,10 @@
 import sys
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import os
 import numpy as np
 import cv2
@@ -78,3 +83,43 @@ def create_img(arr, img=None):
         b, g, r = color_jet(c)
         img = cv2.circle(img, (xs[i], ys[i]), 3, (b, g, r), 3)
     return img
+
+def save_projection_img(filename, array):
+    xs = array[0::3]
+    zs = array[1::3]
+    ys = array[2::3]
+
+    ps = [0, 1, 2, 0, 4, 5, 0, 7, 8, 9, 8, 11, 12, 8, 14, 15]
+    qs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+
+    fig = plt.figure()
+    ax = Axes3D(fig, azim=5, elev=5)
+
+    # Line
+    for i, (p, q) in enumerate(zip(ps, qs)):
+        c = 1 / (len(ps) - 1) * i
+        b, g, r = color_jet(c)
+        color_code = '#%02X%02X%02X' % (r, g, b)
+        ax.plot([xs[p], xs[q]], [ys[p], ys[q]], [zs[p], zs[q]], '-', color=color_code, ms=4, mew=0.5)
+
+    # Dot
+    for i in range(len(xs)):
+        c = 1 / (len(xs) - 1) * i
+        b, g, r = color_jet(c)
+        color_code = '#%02X%02X%02X' % (r, g, b)
+        ax.plot(xs[i:i+1], ys[i:i+1], zs[i:i+1], 'o', color=color_code, ms=4, mew=0.5)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('z')
+    ax.set_zlabel('y')
+
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_zlim(1, -1)
+
+    ax.set_xticks([-1, 0, 1])
+    ax.set_yticks([-1, -0.5, 0, 0.5, 1])
+    ax.set_zticks([-1, -0.5, 0, 0.5, 1])
+
+    plt.savefig(filename, bbox_inches='tight')
+    plt.close()
